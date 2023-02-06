@@ -1,7 +1,7 @@
 <template>
   <div class="container mx-auto flex flex-col items-center bg-gray-100 p-4">
     <div
-        v-if="isLoading"
+        v-if="pageIsLoading"
         class="fixed w-100 h-100 opacity-80 bg-purple-800 inset-0 z-50 flex items-center justify-center">
       <svg class="animate-spin -ml-1 mr-3 h-12 w-12 text-white" xmlns="http://www.w3.org/2000/svg" fill="none"
            viewBox="0 0 24 24">
@@ -30,10 +30,10 @@
             </div>
             <div class="flex bg-white shadow-md p-1 rounded-md shadow-md flex-wrap">
             <span
-                v-for="(coin, index) in coinHelper()"
+                v-for="(coin, index) in tickerHelper(ticker)"
                 :key="index"
                 class="inline-flex items-center px-2 m-1 rounded-md text-xs font-medium bg-gray-300 text-gray-800 cursor-pointer">
-              BTC
+              {{coin}}
             </span>
             </div>
             <div
@@ -166,7 +166,7 @@ export default {
       sel: null,
       graph: [],
       APIKEY: '32acc2845c57ae4f171f4efb78bf6bf5cb8692c1acf73e68d200589261a3254b',
-      isLoading: true,
+      pageIsLoading: true,
       tickersInfo: {},
       tickerIsExist : false
 
@@ -177,7 +177,7 @@ export default {
   created: async function () {
     this.tickersInfo = await fetch('https://min-api.cryptocompare.com/data/all/coinlist?summary=true').then((res) => res.json())
     console.log(this.tickersInfo.Data);
-    this.isLoading = false
+    this.pageIsLoading = false
   },
 
   methods: {
@@ -232,14 +232,18 @@ export default {
       this.graph = []
     },
 
-    coinHelper() {
-
+    tickerHelper(ticker) {
+      if(ticker.length < 1){
+        return ['BTC', 'DOGE', "CAP", "GML"]
+      }
+      return Object.keys(this.tickersInfo.Data).filter(tickerName => tickerName.includes(ticker.toUpperCase())).slice(0, 4)
     },
     isExist(tickerName) {
       tickerName = tickerName.toUpperCase()
       return !!this.tickersList.find(ticker => ticker.name === tickerName)
     }
   },
+
   watch: {
     ticker(){
       this.tickerIsExist = false
