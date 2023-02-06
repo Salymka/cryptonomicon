@@ -37,7 +37,7 @@
             </span>
             </div>
             <div
-                v-if="isExist"
+                v-if="tickerIsExist"
                 class="text-sm text-red-600">
               This Ticker already exist
             </div>
@@ -168,6 +168,7 @@ export default {
       APIKEY: '32acc2845c57ae4f171f4efb78bf6bf5cb8692c1acf73e68d200589261a3254b',
       isLoading: true,
       tickersInfo: {},
+      tickerIsExist : false
 
 
     }
@@ -181,8 +182,12 @@ export default {
 
   methods: {
     add() {
+      if(this.isExist(this.ticker)){
+        this.tickerIsExist = true;
+        return;
+      }
       const currentTicker = {
-        name: this.ticker,
+        name: this.ticker.toUpperCase(),
         price: "---"
       }
       this.tickersList.push(currentTicker);
@@ -231,7 +236,13 @@ export default {
 
     },
     isExist(tickerName) {
+      tickerName = tickerName.toUpperCase()
       return !!this.tickersList.find(ticker => ticker.name === tickerName)
+    }
+  },
+  watch: {
+    ticker(){
+      this.tickerIsExist = false
     }
   }
 }
