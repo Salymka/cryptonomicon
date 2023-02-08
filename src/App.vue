@@ -181,12 +181,42 @@ export default {
     }
   },
 
-  created: async function () {
+  async created() {
+    const tickersData = localStorage.getItem('cryptonomiconList');
+    if(tickersData){
+      this.tickersList = JSON.parse(tickersData);
+      this.tickersList.forEach(ticker => this.subscribeToUpdate(ticker.name))
+    }
+
+
     this.tickersInfo = await fetch('https://min-api.cryptocompare.com/data/all/coinlist?summary=true').then((res) => res.json())
     this.pageIsLoading = false
+
+
   },
 
   methods: {
+    subscribeToUpdate(tickerName){
+      setInterval(async () => {
+        const tickerData = await fetch(`https://min-api.cryptocompare.com/data/price?fsym=${tickerName}&tsyms=USD&api_key=${this.APIKEY}`);
+        const data = await tickerData.json()
+        console.log(data);
+        this.tickersList.find(ticker => ticker.name === tickerName).price = data.USD > 1 ?
+            data.USD.toFixed(2) : data.USD.toPrecision(2);
+        if (this.sel?.name === tickerName) {
+          if (this.graph.length > 100) {
+            this.graph.shift()
+          }
+          this.graph.push(data.USD);
+        }
+      }, 1000)
+      this.ticker = "";
+    },
+
+    updateLocalStorage(){
+      localStorage.setItem('cryptonomiconList', JSON.stringify(this.tickersList))
+    },
+
     add() {
       if(this.isExist(this.ticker)){
         this.tickerIsExist = true;
@@ -201,26 +231,17 @@ export default {
         price: "---"
       }
       this.tickersList.push(currentTicker);
-      setInterval(async () => {
-        const tickerData = await fetch(`https://min-api.cryptocompare.com/data/price?fsym=${currentTicker.name}&tsyms=USD&api_key=${this.APIKEY}`);
-        const data = await tickerData.json()
-        console.log(data);
-        this.tickersList.find(ticker => ticker.name === currentTicker.name).price = data.USD > 1 ?
-            data.USD.toFixed(2) : data.USD.toPrecision(2);
-        if (this.sel?.name === currentTicker.name) {
-          if (this.graph.length > 100) {
-            this.graph.shift()
-          }
-          this.graph.push(data.USD);
-        }
-        console.log(...this.graph);
-      }, 1000)
-      this.ticker = "";
+      this.updateLocalStorage()
+      this.subscribeToUpdate(currentTicker.name)
+
 
     },
     deleteTicker(tickerToRemove) {
       this.tickersList = this.tickersList.filter(ticker => ticker !== tickerToRemove);
-      console.log(this.tickersList);
+      if (tickerToRemove.name === this.sel?.name){
+        this.closeGraph()
+      }
+      this.updateLocalStorage()
     },
 
     normalizeGraph() {
