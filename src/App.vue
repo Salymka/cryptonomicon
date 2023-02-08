@@ -34,7 +34,7 @@
                 @click="addFromHelper(coin)"
                 :key="index"
                 class="inline-flex items-center px-2 m-1 rounded-md text-xs font-medium bg-gray-300 text-gray-800 cursor-pointer">
-              {{coin}}
+              {{ coin }}
             </span>
             </div>
             <div
@@ -70,13 +70,44 @@
           ADD TICKER
         </button>
       </section>
-      <template
-          v-if="tickersList.length"
-      >
+      <template v-if="tickersList.length">
+        <div class="flex">
+          <div class="max-w-xs">
+            <label for="wallet" class="block text-sm font-medium text-gray-700">
+              FILTER
+            </label>
+
+            <input
+                v-model="filter"
+                type="text"
+                name="wallet"
+                id="wallet"
+                class="block w-full pr-10 border-gray-300 text-gray-900 focus:outline-none focus:ring-gray-500 focus:border-gray-500 sm:text-sm rounded-md"
+                placeholder="For example DOGE"
+            />
+            <button
+                v-if="page > 1"
+                v-on:click="page = page - 1"
+                type="button"
+                class="my-4 mx-2 inline-flex items-center py-2 px-4 border border-transparent shadow-sm text-sm leading-4 font-medium rounded-full text-white bg-gray-600 hover:bg-gray-700 transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
+            >
+              Last Page
+            </button>
+            <button
+                v-if="isTheNextPage"
+                v-on:click="page = page + 1"
+                type="button"
+                class="my-4 mx-2 inline-flex items-center py-2 px-4 border border-transparent shadow-sm text-sm leading-4 font-medium rounded-full text-white bg-gray-600 hover:bg-gray-700 transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
+            >
+              Next Page
+            </button>
+
+          </div>
+        </div>
         <hr class="w-full border-t border-gray-600 my-4"/>
         <dl class="mt-5 grid grid-cols-1 gap-5 sm:grid-cols-3">
           <div
-              v-for="tickerCard in tickersList"
+              v-for="tickerCard in tickersFilter(filter)"
               v-bind:key="tickerCard"
               @click="changeTickerCard(tickerCard)"
               :class="{
@@ -114,11 +145,13 @@
             </button>
           </div>
         </dl>
-        <hr class="w-full border-t border-gray-600 my-4"/>
+        <hr
+            v-if="sel"
+            class="w-full border-t border-gray-600 my-4"/>
       </template>
       <section v-if="sel" class="relative">
         <h3 class="text-lg leading-6 font-medium text-gray-900 my-8">
-          VUE - USD
+          {{sel.name}} - USD
         </h3>
         <div class="flex items-end border-gray-600 border-b border-l h-64">
           <div
@@ -174,21 +207,28 @@ export default {
       APIKEY: '32acc2845c57ae4f171f4efb78bf6bf5cb8692c1acf73e68d200589261a3254b',
       pageIsLoading: true,
       tickersInfo: {},
-      tickerIsExist : false,
-      tickerIsntExist : false
-
+      tickerIsExist: false,
+      tickerIsntExist: false,
+      page: 1,
+      filter: '',
+      isTheNextPage : false,
 
     }
   },
 
   async created() {
+    const windowData = Object.fromEntries(new URL(window.location).searchParams.entries())
+    if(windowData.filter){
+      this.filter = windowData.filter
+    }
+    if(windowData.page){
+      this.page = windowData.page
+    }
     const tickersData = localStorage.getItem('cryptonomiconList');
-    if(tickersData){
+    if (tickersData) {
       this.tickersList = JSON.parse(tickersData);
       this.tickersList.forEach(ticker => this.subscribeToUpdate(ticker.name))
     }
-
-
     this.tickersInfo = await fetch('https://min-api.cryptocompare.com/data/all/coinlist?summary=true').then((res) => res.json())
     this.pageIsLoading = false
 
@@ -196,7 +236,7 @@ export default {
   },
 
   methods: {
-    subscribeToUpdate(tickerName){
+    subscribeToUpdate(tickerName) {
       setInterval(async () => {
         const tickerData = await fetch(`https://min-api.cryptocompare.com/data/price?fsym=${tickerName}&tsyms=USD&api_key=${this.APIKEY}`);
         const data = await tickerData.json()
@@ -209,20 +249,20 @@ export default {
           }
           this.graph.push(data.USD);
         }
-      }, 1000)
+      }, 10000)
       this.ticker = "";
     },
 
-    updateLocalStorage(){
+    updateLocalStorage() {
       localStorage.setItem('cryptonomiconList', JSON.stringify(this.tickersList))
     },
 
     add() {
-      if(this.isExist(this.ticker)){
+      if (this.isExist(this.ticker)) {
         this.tickerIsExist = true;
         return;
       }
-      if (!this.isTickerWasGlobal(this.ticker)){
+      if (!this.isTickerWasGlobal(this.ticker)) {
         this.tickerIsntExist = true;
         return;
       }
@@ -238,7 +278,7 @@ export default {
     },
     deleteTicker(tickerToRemove) {
       this.tickersList = this.tickersList.filter(ticker => ticker !== tickerToRemove);
-      if (tickerToRemove.name === this.sel?.name){
+      if (tickerToRemove.name === this.sel?.name) {
         this.closeGraph()
       }
       this.updateLocalStorage()
@@ -252,7 +292,7 @@ export default {
       }
       return this.graph.map(cost => 5 + (cost - minValue) / (maxValue - minValue) * 95);
     },
-    addFromHelper(ticker){
+    addFromHelper(ticker) {
       this.ticker = ticker;
       this.add()
     },
@@ -268,7 +308,7 @@ export default {
     },
 
     tickerHelper(ticker) {
-      if(ticker.length < 1){
+      if (ticker.length < 1) {
         return ['BTC', 'DOGE', "CAP", "GML"]
       }
       return Object.keys(this.tickersInfo.Data).filter(tickerName => tickerName.includes(ticker.toUpperCase())).slice(0, 4)
@@ -279,16 +319,36 @@ export default {
     },
 
     isExist(tickerName) {
-      tickerName = tickerName.toUpperCase()
-      return !!this.tickersList.find(ticker => ticker.name === tickerName)
+      tickerName = tickerName.toUpperCase();
+      return !!this.tickersList.find(ticker => ticker.name === tickerName);
+    },
+    tickersFilter(tickerName) {
+      const startTickersIndexOnPage = 6 * (this.page - 1);
+      const endTickersIndexOnPage = 6 * this.page;
+
+
+      const filteredTickers = this.tickersList.filter(ticker => ticker.name.includes(tickerName.toUpperCase()))
+      const tickersOnPage = filteredTickers.slice(startTickersIndexOnPage, endTickersIndexOnPage);
+      this.isTheNextPage = endTickersIndexOnPage < filteredTickers.length;
+      return tickersOnPage;
     }
   },
 
   watch: {
-    ticker(){
-      this.tickerIsExist = false
-      this.tickerIsntExist = false
+    ticker() {
+      this.tickerIsExist = false;
+      this.tickerIsntExist = false;
+      this.filter = "";
+    },
+    filter() {
+      this.page = 1;
+      history.pushState(null, document.title, `${window.location.pathname}?page=${this.page}&filter=${this.filter}`)
+    },
+
+    page(){
+      history.pushState(null, document.title, `${window.location.pathname}?page=${this.page}&filter=${this.filter}`)
     }
+
   }
 }
 </script>
