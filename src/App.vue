@@ -31,6 +31,7 @@
             <div class="flex bg-white shadow-md p-1 rounded-md shadow-md flex-wrap">
             <span
                 v-for="(coin, index) in tickerHelper(ticker)"
+                @click="addFromHelper(coin)"
                 :key="index"
                 class="inline-flex items-center px-2 m-1 rounded-md text-xs font-medium bg-gray-300 text-gray-800 cursor-pointer">
               {{coin}}
@@ -40,6 +41,11 @@
                 v-if="tickerIsExist"
                 class="text-sm text-red-600">
               This Ticker already exist
+            </div>
+            <div
+                v-if="tickerIsntExist"
+                class="text-sm text-red-600">
+              This Ticker doesn't exist
             </div>
 
           </div>
@@ -168,7 +174,8 @@ export default {
       APIKEY: '32acc2845c57ae4f171f4efb78bf6bf5cb8692c1acf73e68d200589261a3254b',
       pageIsLoading: true,
       tickersInfo: {},
-      tickerIsExist : false
+      tickerIsExist : false,
+      tickerIsntExist : false
 
 
     }
@@ -176,7 +183,6 @@ export default {
 
   created: async function () {
     this.tickersInfo = await fetch('https://min-api.cryptocompare.com/data/all/coinlist?summary=true').then((res) => res.json())
-    console.log(this.tickersInfo.Data);
     this.pageIsLoading = false
   },
 
@@ -184,6 +190,10 @@ export default {
     add() {
       if(this.isExist(this.ticker)){
         this.tickerIsExist = true;
+        return;
+      }
+      if (!this.isTickerWasGlobal(this.ticker)){
+        this.tickerIsntExist = true;
         return;
       }
       const currentTicker = {
@@ -221,6 +231,10 @@ export default {
       }
       return this.graph.map(cost => 5 + (cost - minValue) / (maxValue - minValue) * 95);
     },
+    addFromHelper(ticker){
+      this.ticker = ticker;
+      this.add()
+    },
 
     closeGraph() {
       this.graph = [];
@@ -238,6 +252,11 @@ export default {
       }
       return Object.keys(this.tickersInfo.Data).filter(tickerName => tickerName.includes(ticker.toUpperCase())).slice(0, 4)
     },
+
+    isTickerWasGlobal(ticker) {
+      return ticker.toUpperCase() in this.tickersInfo.Data
+    },
+
     isExist(tickerName) {
       tickerName = tickerName.toUpperCase()
       return !!this.tickersList.find(ticker => ticker.name === tickerName)
@@ -247,6 +266,7 @@ export default {
   watch: {
     ticker(){
       this.tickerIsExist = false
+      this.tickerIsntExist = false
     }
   }
 }
