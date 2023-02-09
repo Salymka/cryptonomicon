@@ -30,7 +30,7 @@
             </div>
             <div class="flex bg-white shadow-md p-1 rounded-md shadow-md flex-wrap">
             <span
-                v-for="(coin, index) in tickerHelper(ticker)"
+                v-for="(coin, index) in tickerHelper"
                 @click="addFromHelper(coin)"
                 :key="index"
                 class="inline-flex items-center px-2 m-1 rounded-md text-xs font-medium bg-gray-300 text-gray-800 cursor-pointer">
@@ -107,11 +107,11 @@
         <hr class="w-full border-t border-gray-600 my-4"/>
         <dl class="mt-5 grid grid-cols-1 gap-5 sm:grid-cols-3">
           <div
-              v-for="tickerCard in tickersFilter(filter)"
+              v-for="tickerCard in tickersFilter"
               v-bind:key="tickerCard"
               @click="changeTickerCard(tickerCard)"
               :class="{
-                'border-4' : sel === tickerCard
+                'border-4' : selectedTicker === tickerCard
               }"
               class="bg-white overflow-hidden shadow rounded-lg border-purple-800 border-solid cursor-pointer"
           >
@@ -146,16 +146,16 @@
           </div>
         </dl>
         <hr
-            v-if="sel"
+            v-if="selectedTicker"
             class="w-full border-t border-gray-600 my-4"/>
       </template>
-      <section v-if="sel" class="relative">
+      <section v-if="selectedTicker" class="relative">
         <h3 class="text-lg leading-6 font-medium text-gray-900 my-8">
-          {{sel.name}} - USD
+          {{selectedTicker.name}} - USD
         </h3>
         <div class="flex items-end border-gray-600 border-b border-l h-64">
           <div
-              v-for="(bar, index) in normalizeGraph()"
+              v-for="(bar, index) in normalizeGraph"
               :key="index"
               :style="{height : `${bar}%`}"
               class="bg-purple-800 border w-10"
@@ -202,7 +202,7 @@ export default {
     return {
       ticker: '',
       tickersList: [],
-      sel: null,
+      selectedTicker: null,
       graph: [],
       APIKEY: '32acc2845c57ae4f171f4efb78bf6bf5cb8692c1acf73e68d200589261a3254b',
       pageIsLoading: true,
@@ -211,7 +211,6 @@ export default {
       tickerIsntExist: false,
       page: 1,
       filter: '',
-      isTheNextPage : false,
 
     }
   },
@@ -222,8 +221,9 @@ export default {
       this.filter = windowData.filter
     }
     if(windowData.page){
-      this.page = windowData.page
+      this.page = +windowData.page
     }
+
     const tickersData = localStorage.getItem('cryptonomiconList');
     if (tickersData) {
       this.tickersList = JSON.parse(tickersData);
@@ -235,6 +235,59 @@ export default {
 
   },
 
+  computed: {
+    normalizeGraph() {
+      const maxValue = Math.max(...this.graph);
+      const minValue = Math.min(...this.graph);
+      if (maxValue === minValue) {
+        return this.graph.map(() => 50)
+      }
+      return this.graph.map(cost => 5 + (cost - minValue) / (maxValue - minValue) * 95);
+    },
+
+    tickerHelper() {
+      if (this.ticker.length < 1) {
+        return ['BTC', 'DOGE', "CAP", "GML"]
+      }
+      return Object.keys(this.tickersInfo.Data).filter(tickerName => tickerName.includes(this.ticker.toUpperCase())).slice(0, 4)
+    },
+
+    isTickerWasGlobal() {
+      return this.ticker.toUpperCase() in this.tickersInfo.Data
+    },
+
+    isExist() {
+      return !!this.tickersList.find(ticker => ticker.name === this.ticker.toUpperCase());
+    },
+
+    startTickersIndexOnPage(){
+      return 6 * (this.page - 1);
+    },
+
+    endTickersIndexOnPage(){
+      return 6 * this.page;
+    },
+
+    filteredTickers(){
+      return this.tickersList.filter(ticker => ticker.name.includes(this.filter.toUpperCase()));
+    },
+
+    isTheNextPage(){
+      return this.endTickersIndexOnPage < this.filteredTickers.length;
+    },
+
+    tickersFilter() {
+      return this.filteredTickers.slice(this.startTickersIndexOnPage, this.endTickersIndexOnPage);
+    },
+
+    pageStateOptions(){
+      return {
+        page: this.page,
+        filter: this.filter
+      }
+    }
+  },
+
   methods: {
     subscribeToUpdate(tickerName) {
       setInterval(async () => {
@@ -243,7 +296,7 @@ export default {
         console.log(data);
         this.tickersList.find(ticker => ticker.name === tickerName).price = data.USD > 1 ?
             data.USD.toFixed(2) : data.USD.toPrecision(2);
-        if (this.sel?.name === tickerName) {
+        if (this.selectedTicker?.name === tickerName) {
           if (this.graph.length > 100) {
             this.graph.shift()
           }
@@ -253,16 +306,12 @@ export default {
       this.ticker = "";
     },
 
-    updateLocalStorage() {
-      localStorage.setItem('cryptonomiconList', JSON.stringify(this.tickersList))
-    },
-
     add() {
-      if (this.isExist(this.ticker)) {
+      if (this.isExist) {
         this.tickerIsExist = true;
         return;
       }
-      if (!this.isTickerWasGlobal(this.ticker)) {
+      if (!this.isTickerWasGlobal) {
         this.tickerIsntExist = true;
         return;
       }
@@ -270,84 +319,63 @@ export default {
         name: this.ticker.toUpperCase(),
         price: "---"
       }
-      this.tickersList.push(currentTicker);
-      this.updateLocalStorage()
-      this.subscribeToUpdate(currentTicker.name)
+      this.tickersList = [...this.tickersList, currentTicker];
+      this.subscribeToUpdate(currentTicker.name);
 
 
     },
     deleteTicker(tickerToRemove) {
       this.tickersList = this.tickersList.filter(ticker => ticker !== tickerToRemove);
-      if (tickerToRemove.name === this.sel?.name) {
+      if (tickerToRemove.name === this.selectedTicker?.name) {
         this.closeGraph()
       }
-      this.updateLocalStorage()
     },
 
-    normalizeGraph() {
-      const maxValue = Math.max(...this.graph);
-      const minValue = Math.min(...this.graph);
-      if (maxValue === minValue) {
-        return this.graph.map(() => 50)
-      }
-      return this.graph.map(cost => 5 + (cost - minValue) / (maxValue - minValue) * 95);
-    },
     addFromHelper(ticker) {
       this.ticker = ticker;
       this.add()
     },
 
     closeGraph() {
-      this.graph = [];
-      this.sel = null;
+      this.selectedTicker = null;
     },
 
     changeTickerCard(tickerCard) {
-      this.sel = tickerCard;
-      this.graph = []
+      this.selectedTicker = tickerCard;
     },
-
-    tickerHelper(ticker) {
-      if (ticker.length < 1) {
-        return ['BTC', 'DOGE', "CAP", "GML"]
-      }
-      return Object.keys(this.tickersInfo.Data).filter(tickerName => tickerName.includes(ticker.toUpperCase())).slice(0, 4)
-    },
-
-    isTickerWasGlobal(ticker) {
-      return ticker.toUpperCase() in this.tickersInfo.Data
-    },
-
-    isExist(tickerName) {
-      tickerName = tickerName.toUpperCase();
-      return !!this.tickersList.find(ticker => ticker.name === tickerName);
-    },
-    tickersFilter(tickerName) {
-      const startTickersIndexOnPage = 6 * (this.page - 1);
-      const endTickersIndexOnPage = 6 * this.page;
-
-
-      const filteredTickers = this.tickersList.filter(ticker => ticker.name.includes(tickerName.toUpperCase()))
-      const tickersOnPage = filteredTickers.slice(startTickersIndexOnPage, endTickersIndexOnPage);
-      this.isTheNextPage = endTickersIndexOnPage < filteredTickers.length;
-      return tickersOnPage;
-    }
   },
 
   watch: {
+    selectedTicker(){
+      this.graph = [];
+    },
+
+    tickersFilter(){
+      if(this.tickersFilter.length === 0 && this.page > 1){
+        this.page -= 1;
+      }
+    },
+
+    tickersList(){
+      localStorage.setItem('cryptonomiconList', JSON.stringify(this.tickersList))
+    },
+
     ticker() {
       this.tickerIsExist = false;
       this.tickerIsntExist = false;
       this.filter = "";
     },
+
     filter() {
       this.page = 1;
-      history.pushState(null, document.title, `${window.location.pathname}?page=${this.page}&filter=${this.filter}`)
     },
 
-    page(){
-      history.pushState(null, document.title, `${window.location.pathname}?page=${this.page}&filter=${this.filter}`)
-    }
+    pageStateOptions(newValue){
+      history.pushState(
+          null,
+          document.title,
+          `${window.location.pathname}?page=${newValue.page}&filter=${newValue.filter}`)
+    },
 
   }
 }
