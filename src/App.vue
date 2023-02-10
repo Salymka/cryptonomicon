@@ -120,7 +120,7 @@
                 {{ tickerCard.name }} - USD
               </dt>
               <dd class="mt-1 text-3xl font-semibold text-gray-900">
-                {{ tickerCard.price }}
+                {{ formatPrice(tickerCard.price)}}
               </dd>
             </div>
             <div class="w-full border-t border-gray-200"></div>
@@ -195,6 +195,7 @@
 </template>
 
 <script>
+import {loadTicker, tickersHelper} from "@/api";
 
 export default {
   name: 'App',
@@ -227,10 +228,10 @@ export default {
     const tickersData = localStorage.getItem('cryptonomiconList');
     if (tickersData) {
       this.tickersList = JSON.parse(tickersData);
-      this.tickersList.forEach(ticker => this.subscribeToUpdate(ticker.name))
     }
-    this.tickersInfo = await fetch('https://min-api.cryptocompare.com/data/all/coinlist?summary=true').then((res) => res.json())
-    this.pageIsLoading = false
+    this.tickersInfo = tickersHelper()
+    setInterval(this.updateTickersList, 5000)
+    this.pageIsLoading = !this.tickersInfo
 
 
   },
@@ -289,21 +290,23 @@ export default {
   },
 
   methods: {
-    subscribeToUpdate(tickerName) {
-      setInterval(async () => {
-        const tickerData = await fetch(`https://min-api.cryptocompare.com/data/price?fsym=${tickerName}&tsyms=USD&api_key=${this.APIKEY}`);
-        const data = await tickerData.json()
-        console.log(data);
-        this.tickersList.find(ticker => ticker.name === tickerName).price = data.USD > 1 ?
-            data.USD.toFixed(2) : data.USD.toPrecision(2);
-        if (this.selectedTicker?.name === tickerName) {
-          if (this.graph.length > 100) {
-            this.graph.shift()
-          }
-          this.graph.push(data.USD);
-        }
-      }, 10000)
-      this.ticker = "";
+    formatPrice(price){
+      if(price === "---"){
+        return price;
+      }
+      price = +price;
+      return price > 1 ? price.toFixed(2) : +price.toPrecision(2)
+    },
+
+    async updateTickersList() {
+      if(!this.tickersList.length) {
+        return;
+      }
+      const exchangeData = await loadTicker(this.tickersList.map(ticker => ticker.name))
+      this.tickersList.forEach(ticker => {
+        const price = +exchangeData[ticker.name.toUpperCase()];
+        ticker.price = price ?? "---";
+      })
     },
 
     add() {
@@ -320,7 +323,6 @@ export default {
         price: "---"
       }
       this.tickersList = [...this.tickersList, currentTicker];
-      this.subscribeToUpdate(currentTicker.name);
 
 
     },
