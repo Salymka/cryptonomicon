@@ -114,7 +114,7 @@
                 {{ tickerCard.name }} - USD
               </dt>
               <dd class="mt-1 text-3xl font-semibold text-gray-900">
-                {{ formatPrice(tickerCard.price)}}
+                {{ formatPrice(tickerCard.price) }}
               </dd>
             </div>
             <div class="w-full border-t border-gray-200"></div>
@@ -145,7 +145,7 @@
       </template>
       <section v-if="selectedTicker" class="relative">
         <h3 class="text-lg leading-6 font-medium text-gray-900 my-8">
-          {{selectedTicker.name}} - USD
+          {{ selectedTicker.name }} - USD
         </h3>
         <div class="flex items-end border-gray-600 border-b border-l h-64">
           <div
@@ -211,10 +211,10 @@ export default {
 
   async created() {
     const windowData = Object.fromEntries(new URL(window.location).searchParams.entries())
-    if(windowData.filter){
+    if (windowData.filter) {
       this.filter = windowData.filter
     }
-    if(windowData.page){
+    if (windowData.page) {
       this.page = +windowData.page
     }
 
@@ -255,19 +255,19 @@ export default {
       return !!this.tickersList.find(ticker => ticker.name === this.ticker.toUpperCase());
     },
 
-    startTickersIndexOnPage(){
+    startTickersIndexOnPage() {
       return 6 * (this.page - 1);
     },
 
-    endTickersIndexOnPage(){
+    endTickersIndexOnPage() {
       return 6 * this.page;
     },
 
-    filteredTickers(){
+    filteredTickers() {
       return this.tickersList.filter(ticker => ticker.name.includes(this.filter.toUpperCase()));
     },
 
-    isTheNextPage(){
+    isTheNextPage() {
       return this.endTickersIndexOnPage < this.filteredTickers.length;
     },
 
@@ -275,7 +275,7 @@ export default {
       return this.filteredTickers.slice(this.startTickersIndexOnPage, this.endTickersIndexOnPage);
     },
 
-    pageStateOptions(){
+    pageStateOptions() {
       return {
         page: this.page,
         filter: this.filter
@@ -284,16 +284,19 @@ export default {
   },
 
   methods: {
-    updatePrice(tickerName, price){
+    updatePrice(tickerName, price) {
       this.tickersList.find(ticker => ticker.name === tickerName).price = price;
+      if (this.selectedTicker?.name === tickerName) {
+        this.graph.push(price)
+      }
     },
 
-    formatPrice(price){
-      if(price === "---"){
+    formatPrice(price) {
+      if (price === "---") {
         return price;
       }
       price = +price;
-      return price > 1 ? price.toFixed(2) : +price.toPrecision(2)
+      return price > 1 ? price.toFixed(2) : +price.toPrecision(5)
     },
 
 
@@ -308,11 +311,12 @@ export default {
       }
       this.tickersList = [...this.tickersList, currentTicker];
       subscribeToTicker(currentTicker.name, newPrice => {
-            this.updatePrice(currentTicker.name, newPrice)
+        this.updatePrice(currentTicker.name, newPrice)
       })
       this.filter = '';
       this.ticker = '';
     },
+
     deleteTicker(tickerToRemove) {
       this.tickersList = this.tickersList.filter(ticker => ticker !== tickerToRemove);
       if (tickerToRemove.name === this.selectedTicker?.name) {
@@ -336,17 +340,17 @@ export default {
   },
 
   watch: {
-    selectedTicker(){
+    selectedTicker() {
       this.graph = [];
     },
 
-    tickersOnPage(){
-      if(this.tickersOnPage.length === 0 && this.page > 1){
+    tickersOnPage() {
+      if (this.tickersOnPage.length === 0 && this.page > 1) {
         this.page -= 1;
       }
     },
 
-    tickersList(){
+    tickersList() {
       localStorage.setItem('cryptonomiconList', JSON.stringify(this.tickersList))
     },
 
@@ -359,7 +363,7 @@ export default {
       this.page = 1;
     },
 
-    pageStateOptions(newValue){
+    pageStateOptions(newValue) {
       history.pushState(
           null,
           document.title,
