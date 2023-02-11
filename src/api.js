@@ -1,11 +1,35 @@
 const API_KEY = '32acc2845c57ae4f171f4efb78bf6bf5cb8692c1acf73e68d200589261a3254b'
 
-export const loadTicker = tickers =>
-fetch(`https://min-api.cryptocompare.com/data/pricemulti?fsyms=${tickers.join(',')}&tsyms=USD&api_key=${API_KEY}`)
-    .then(res => res.json())
-    .then(rawData => Object.fromEntries(Object.entries(rawData).map(([key, value]) => [key, value.USD])))
+const tickersHandlers = new Map;
+export const loadTickers = () => {
+    if (tickersHandlers.size === 0) {
+        return;
+    }
+    const data = fetch(`https://min-api.cryptocompare.com/data/pricemulti?fsyms=${[...tickersHandlers.keys()].join(',')}&tsyms=USD&api_key=${API_KEY}`)
+        data.then(r => r.json())
+        .then(rawData => {
+            const updatedPrice = Object.fromEntries(
+                Object.entries(rawData).map(([key, value]) => [key, value.USD]));
 
-export function tickersHelper() {
+            Object.entries(updatedPrice).forEach(([currency, newPrice]) => {
+                const handlers = tickersHandlers.get((currency) ?? []);
+                handlers.forEach((fn) => fn(newPrice))
+            })
+            })
+
+}
+setInterval(loadTickers, 5000)
+export const subscribeToTicker = (ticker, callBack) => {
+    const subscribers = tickersHandlers.get(ticker) || [];
+    tickersHandlers.set(ticker, [...subscribers, callBack]);
+}
+
+export const unsubscribeFromTicker = ticker => {
+    tickersHandlers.delete(ticker)
+}
+
+
+export const tickersHelper = () => {
     return fetch('https://min-api.cryptocompare.com/data/all/coinlist?summary=true').then((res) => res.json())
 }
 

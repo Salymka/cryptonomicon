@@ -42,12 +42,6 @@
                 class="text-sm text-red-600">
               This Ticker already exist
             </div>
-            <div
-                v-if="tickerIsntExist"
-                class="text-sm text-red-600">
-              This Ticker doesn't exist
-            </div>
-
           </div>
         </div>
         <button
@@ -195,7 +189,7 @@
 </template>
 
 <script>
-import {loadTicker, tickersHelper} from "@/api";
+import {subscribeToTicker,  unsubscribeFromTicker} from "@/api";
 
 export default {
   name: 'App',
@@ -209,7 +203,6 @@ export default {
       pageIsLoading: true,
       tickersInfo: {},
       tickerIsExist: false,
-      tickerIsntExist: false,
       page: 1,
       filter: '',
 
@@ -225,13 +218,18 @@ export default {
       this.page = +windowData.page
     }
 
+
     const tickersData = localStorage.getItem('cryptonomiconList');
     if (tickersData) {
       this.tickersList = JSON.parse(tickersData);
+      this.tickersList.forEach(ticker => subscribeToTicker(ticker.name, newPrice => {
+        this.updatePrice(ticker.name, newPrice);
+      }))
     }
-    this.tickersInfo = tickersHelper()
-    setInterval(this.updateTickersList, 5000)
-    this.pageIsLoading = !this.tickersInfo
+
+
+    this.tickersInfo = await fetch('https://min-api.cryptocompare.com/data/all/coinlist?summary=true').then((res) => res.json())
+    this.pageIsLoading = false
 
 
   },
@@ -251,10 +249,6 @@ export default {
         return ['BTC', 'DOGE', "CAP", "GML"]
       }
       return Object.keys(this.tickersInfo.Data).filter(tickerName => tickerName.includes(this.ticker.toUpperCase())).slice(0, 4)
-    },
-
-    isTickerWasGlobal() {
-      return this.ticker.toUpperCase() in this.tickersInfo.Data
     },
 
     isExist() {
@@ -290,6 +284,10 @@ export default {
   },
 
   methods: {
+    updatePrice(tickerName, price){
+      this.tickersList.find(ticker => ticker.name === tickerName).price = price;
+    },
+
     formatPrice(price){
       if(price === "---"){
         return price;
@@ -298,24 +296,10 @@ export default {
       return price > 1 ? price.toFixed(2) : +price.toPrecision(2)
     },
 
-    async updateTickersList() {
-      if(!this.tickersList.length) {
-        return;
-      }
-      const exchangeData = await loadTicker(this.tickersList.map(ticker => ticker.name))
-      this.tickersList.forEach(ticker => {
-        const price = +exchangeData[ticker.name.toUpperCase()];
-        ticker.price = price ?? "---";
-      })
-    },
 
     add() {
       if (this.isExist) {
         this.tickerIsExist = true;
-        return;
-      }
-      if (!this.isTickerWasGlobal) {
-        this.tickerIsntExist = true;
         return;
       }
       const currentTicker = {
@@ -323,14 +307,18 @@ export default {
         price: "---"
       }
       this.tickersList = [...this.tickersList, currentTicker];
-
-
+      subscribeToTicker(currentTicker.name, newPrice => {
+            this.updatePrice(currentTicker.name, newPrice)
+      })
+      this.filter = '';
+      this.ticker = '';
     },
     deleteTicker(tickerToRemove) {
       this.tickersList = this.tickersList.filter(ticker => ticker !== tickerToRemove);
       if (tickerToRemove.name === this.selectedTicker?.name) {
         this.closeGraph()
       }
+      unsubscribeFromTicker(tickerToRemove.name)
     },
 
     addFromHelper(ticker) {
@@ -364,7 +352,6 @@ export default {
 
     ticker() {
       this.tickerIsExist = false;
-      this.tickerIsntExist = false;
       this.filter = "";
     },
 
