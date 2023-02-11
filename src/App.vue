@@ -101,7 +101,7 @@
         <hr class="w-full border-t border-gray-600 my-4"/>
         <dl class="mt-5 grid grid-cols-1 gap-5 sm:grid-cols-3">
           <div
-              v-for="tickerCard in tickersFilter"
+              v-for="tickerCard in tickersOnPage"
               v-bind:key="tickerCard"
               @click="changeTickerCard(tickerCard)"
               :class="{
@@ -189,7 +189,7 @@
 </template>
 
 <script>
-import {subscribeToTicker,  unsubscribeFromTicker} from "@/api";
+import {subscribeToTicker, tickersHelper, unsubscribeFromTicker} from "@/api";
 
 export default {
   name: 'App',
@@ -228,8 +228,8 @@ export default {
     }
 
 
-    this.tickersInfo = await fetch('https://min-api.cryptocompare.com/data/all/coinlist?summary=true').then((res) => res.json())
-    this.pageIsLoading = false
+    this.tickersInfo = await tickersHelper()
+    this.pageIsLoading = !this.tickersInfo
 
 
   },
@@ -271,7 +271,7 @@ export default {
       return this.endTickersIndexOnPage < this.filteredTickers.length;
     },
 
-    tickersFilter() {
+    tickersOnPage() {
       return this.filteredTickers.slice(this.startTickersIndexOnPage, this.endTickersIndexOnPage);
     },
 
@@ -340,8 +340,8 @@ export default {
       this.graph = [];
     },
 
-    tickersFilter(){
-      if(this.tickersFilter.length === 0 && this.page > 1){
+    tickersOnPage(){
+      if(this.tickersOnPage.length === 0 && this.page > 1){
         this.page -= 1;
       }
     },

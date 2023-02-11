@@ -6,7 +6,7 @@ export const loadTickers = () => {
         return;
     }
     const data = fetch(`https://min-api.cryptocompare.com/data/pricemulti?fsyms=${[...tickersHandlers.keys()].join(',')}&tsyms=USD&api_key=${API_KEY}`)
-        data.then(r => r.json())
+    data.then(r => r.json())
         .then(rawData => {
             const updatedPrice = Object.fromEntries(
                 Object.entries(rawData).map(([key, value]) => [key, value.USD]));
@@ -15,10 +15,9 @@ export const loadTickers = () => {
                 const handlers = tickersHandlers.get((currency) ?? []);
                 handlers.forEach((fn) => fn(newPrice))
             })
-            })
+        })
 
 }
-setInterval(loadTickers, 5000)
 export const subscribeToTicker = (ticker, callBack) => {
     const subscribers = tickersHandlers.get(ticker) || [];
     tickersHandlers.set(ticker, [...subscribers, callBack]);
@@ -32,4 +31,6 @@ export const unsubscribeFromTicker = ticker => {
 export const tickersHelper = () => {
     return fetch('https://min-api.cryptocompare.com/data/all/coinlist?summary=true').then((res) => res.json())
 }
+
+setInterval(loadTickers, 5000)
 
