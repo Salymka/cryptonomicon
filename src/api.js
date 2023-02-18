@@ -11,19 +11,19 @@ socket.addEventListener("message", event =>{
         if(messageData.FROMSYMBOL === 'BTC'){
             // convertValueBTC = messageData.PRICE;
         }
-    }setTimeout(() => {
-        if(messageData.TYPE === "500" && messageData.MESSAGE === "INVALID_SUB"){
-            console.log([messageData.PARAMETER.slice(0, -3) + 'BTC'])
-            subscribeToTickerOnWs("", '', [messageData.PARAMETER.slice(0, -3) + 'BTC'])
-        }
-    },10000)
+    // }setTimeout(() => {
+    //     if(messageData.TYPE === "500" && messageData.MESSAGE === "INVALID_SUB"){
+    //         console.log([messageData.PARAMETER.slice(0, -3) + 'BTC'])
+    //         subscribeToTickerOnWs("", '', [messageData.PARAMETER.slice(0, -3) + 'BTC'])
+    //     }
+    // },10000)
 
-})
+}})
 
-function subscribeToTickerOnWs(ticker, convertValue = 'USD', subs = []){
+function subscribeToTickerOnWs(ticker){
     const message = JSON.stringify({
         action: "SubAdd",
-        subs: subs.length === 0 ? [`5~CCCAGG~${ticker}~${convertValue}`] : subs
+        subs: [`5~CCCAGG~${ticker}~USD`]
     });
     console.log(message)
 
@@ -40,7 +40,7 @@ function subscribeToTickerOnWs(ticker, convertValue = 'USD', subs = []){
 function unsubscribeFromTickerOnWs(ticker){
     const message = JSON.stringify({
         action: "SubRemove",
-        subs: [`5~CCCAGG~${ticker}~USD`]
+        subs: [`5~CCCAGG~${ticker}~BTC`]
     });
     if(socket.readyState === WebSocket.OPEN){
         socket.send(message);

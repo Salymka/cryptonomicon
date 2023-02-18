@@ -106,8 +106,8 @@
               @click="changeTickerCard(tickerCard)"
               :class="{
                 'border-4' : selectedTicker === tickerCard,
-                '{borderColor: red}' : tickerCard.price === '---'
-              }"
+                'ticker-error' : tickerCard.price === '---'
+               }"
               class="bg-white overflow-hidden shadow rounded-lg border-purple-800 border-solid cursor-pointer"
           >
             <div class="px-4 py-5 sm:p-6 text-center">
@@ -148,12 +148,16 @@
         <h3 class="text-lg leading-6 font-medium text-gray-900 my-8">
           {{ selectedTicker.name }} - USD
         </h3>
-        <div class="flex items-end border-gray-600 border-b border-l h-64">
+        <div
+            class="flex items-end border-gray-600 border-b border-l h-64"
+            ref="graph"
+        >
           <div
               v-for="(bar, index) in normalizeGraph"
               :key="index"
+              ref="graphElement"
               :style="{height : `${bar}%`}"
-              class="bg-purple-800 border w-10"
+              class="bg-purple-800 border w-6"
           ></div>
 
         </div>
@@ -199,13 +203,14 @@ export default {
       ticker: '',
       tickersList: [],
       selectedTicker: null,
-      graph: [],
+      graph: null,
       APIKEY: '405b2526fce0af5d31588ded326b9c2d74465d7b6464f88fcccc8bcd05d5b8fd',
       pageIsLoading: true,
       tickersInfo: {},
       tickerIsExist: false,
       page: 1,
       filter: '',
+      maxGraphElements: null,
 
     }
   },
@@ -283,12 +288,37 @@ export default {
       }
     }
   },
+  mounted() {
+
+    window.addEventListener('resize', this.calculateMaxGraphElements)
+  },
+
+  beforeUnmount() {
+    window.removeEventListener('resize', this.calculateMaxGraphElements)
+  },
 
   methods: {
+    calculateMaxGraphElements(){
+      if(!this.$refs.graph){
+        return;
+      }
+      this.maxGraphElements = this.$refs.graph.clientWidth / 22
+      console.log(this.maxGraphElements)
+
+    },
+
     updatePrice(tickerName, price) {
       this.tickersList.find(ticker => ticker.name === tickerName).price = price;
       if (this.selectedTicker?.name === tickerName) {
         this.graph.push(price)
+        if(!this.maxGraphElements){
+          this.calculateMaxGraphElements()
+        }
+        if (this.graph.length > this.maxGraphElements){
+
+          console.log(this.graph.slice(-this.maxGraphElements))
+          this.graph = this.graph.slice(-this.maxGraphElements)
+        }
       }
     },
 
@@ -343,6 +373,10 @@ export default {
   watch: {
     selectedTicker() {
       this.graph = [];
+
+    },
+    graph() {
+      this.calculateMaxGraphElements()
     },
 
     tickersOnPage() {
