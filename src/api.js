@@ -25,7 +25,6 @@ function subscribeToTickerOnWs(ticker){
         action: "SubAdd",
         subs: [`5~CCCAGG~${ticker}~USD`]
     });
-    console.log(message)
 
 
     if(socket.readyState === WebSocket.OPEN){

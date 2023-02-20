@@ -55,11 +55,13 @@ export default {
 
   props: {
     tickersList: Array,
-    tickersInfo: Object
+    tickersInfo: Object,
+    page: Number
   },
-  created() {
-    console.log(this.tickersList)
-    console.log(this.tickersInfo)
+  mounted() {
+    // console.log(this.tickersList)
+    // console.log(this.tickersInfo)
+    // console.log(this.page)
   },
 
   computed:{
