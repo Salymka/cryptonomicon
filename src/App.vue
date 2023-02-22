@@ -4,9 +4,7 @@
     <div class="container">
       <add-ticker-bar
           @add-ticker="add"
-          :tikersList="tickersList"
-          :tickersInfo="tickersInfo"
-          :page="page"
+          :tickersList="tickersList"
       />
       <template v-if="tickersList.length">
         <div class="flex">
@@ -121,12 +119,11 @@ export default {
       graph: null,
       APIKEY: '405b2526fce0af5d31588ded326b9c2d74465d7b6464f88fcccc8bcd05d5b8fd',
       pageIsLoading: true,
-      tickersInfo: {},
+
       tickerIsExist : false,
       page: 1,
       filter: '',
       maxGraphElements: null,
-
     }
   },
 
@@ -143,14 +140,15 @@ export default {
     const tickersData = localStorage.getItem('cryptonomiconList');
     if (tickersData) {
       this.tickersList = JSON.parse(tickersData);
-      this.tickersList.forEach(ticker => subscribeToTicker(ticker.name, newPrice => {
+      this.tickersList.forEach(ticker =>
+          subscribeToTicker(ticker.name, newPrice => {
         this.updatePrice(ticker.name, newPrice);
       }))
     }
 
 
-    this.tickersInfo = await tickersHelper()
-    this.pageIsLoading = !this.tickersInfo
+
+    this.pageIsLoading = false;
 
 
   },

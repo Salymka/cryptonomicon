@@ -40,6 +40,7 @@
 
 <script>
 import AddButton from "@/components/AddButton.vue";
+import {tickersHelper} from "@/api";
 
 export default {
   components: {
@@ -49,51 +50,54 @@ export default {
   data() {
     return {
       ticker: '',
-      tickerExist: false
+      tickerExist: false,
+      tickersInfo: {},
     }
   },
+  props: ['tickersList'],
 
-  props: {
-    tickersList: Array,
-    tickersInfo: Object,
-    page: Number
+  async created() {
+    console.log(this.tickersList)
+    this.tickersInfo = await tickersHelper()
   },
-  mounted() {
-    // console.log(this.tickersList)
-    // console.log(this.tickersInfo)
-    // console.log(this.page)
-  },
+
 
   computed:{
     tickerHelper() {
       if (this.ticker.length < 1) {
         return ['BTC', 'DOGE', "CAP", "GML"]
       }
-      return Object.keys(this.tickersInfo.Data).filter(tickerName => tickerName.includes(this.ticker.toUpperCase())).slice(0, 4)
+      return Object.keys(this.tickersInfo.Data)
+          .filter(tickerName => tickerName.
+          includes(this.ticker.toUpperCase()))
+          .slice(0, 4)
     },
 
-    tickerIsExist(tickerName){
-      return this.tickersList.find(ticker => ticker.name === tickerName)
-    }
+
   },
 
   methods: {
+    tickerIsExist(tickerName){
+      return this.tickersList.find(ticker => ticker.name === tickerName)
+    },
+
     add() {
-      // console.log(this.tickersList)
-      // if(this.tickerIsExist(this.ticker)){
-      //   this.tickerExist = true;
-      //   return;
-      // }
+      if(this.tickerIsExist(this.ticker)){
+        this.tickerExist = true;
+        return;
+      }
       this.$emit('add-ticker', this.ticker);
       this.ticker = '';
     },
 
-    addFromHelper(ticker) {
-      // if(this.tickerIsExist(ticker)){
-      //   this.tickerExist = true;
-      //   return;
-      // }
-      this.$emit('add-ticker', ticker);
+    addFromHelper(tickerFromHelper) {
+      if(this.tickerIsExist(tickerFromHelper)){
+        this.tickerExist = true;
+        return;
+      }
+
+      this.$emit('add-ticker', tickerFromHelper);
+      this.tickerExist = false;
     },
   },
 
