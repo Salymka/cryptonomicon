@@ -57,10 +57,8 @@ export default {
   props: ['tickersList'],
 
   async created() {
-    console.log(this.tickersList)
     this.tickersInfo = await tickersHelper()
   },
-
 
   computed:{
     tickerHelper() {
@@ -68,12 +66,9 @@ export default {
         return ['BTC', 'DOGE', "CAP", "GML"]
       }
       return Object.keys(this.tickersInfo.Data)
-          .filter(tickerName => tickerName.
-          includes(this.ticker.toUpperCase()))
+          .filter(tickerName => tickerName.includes(this.ticker.toUpperCase()))
           .slice(0, 4)
     },
-
-
   },
 
   methods: {

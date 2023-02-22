@@ -41,47 +41,14 @@
           </div>
         </div>
         <hr class="w-full border-t border-gray-600 my-4"/>
-        <dl class="mt-5 grid grid-cols-1 gap-5 sm:grid-cols-3">
-          <div
-              v-for="tickerCard in tickersOnPage"
-              v-bind:key="tickerCard"
-              @click="changeTickerCard(tickerCard)"
-              :class="{
-                'border-4' : selectedTicker === tickerCard,
-                'ticker-error' : tickerCard.price === '---'
-               }"
-              class="bg-white overflow-hidden shadow rounded-lg border-purple-800 border-solid cursor-pointer"
-          >
-            <div class="px-4 py-5 sm:p-6 text-center">
-              <dt class="text-sm font-medium text-gray-500 truncate">
-                {{ tickerCard.name }} - USD
-              </dt>
-              <dd class="mt-1 text-3xl font-semibold text-gray-900">
-                {{ formatPrice(tickerCard.price) }}
-              </dd>
-            </div>
-            <div class="w-full border-t border-gray-200"></div>
-            <button
-                @click.stop="deleteTicker(tickerCard)"
-                class="flex items-center justify-center font-medium w-full bg-gray-100 px-4 py-4 sm:px-6 text-md text-gray-500 hover:text-gray-600 hover:bg-gray-200 hover:opacity-20 transition-all focus:outline-none"
-            >
-              <svg
-                  class="h-5 w-5"
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 20 20"
-                  fill="#718096"
-                  aria-hidden="true"
-              >
-                <path
-                    fill-rule="evenodd"
-                    d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z"
-                    clip-rule="evenodd"
-                ></path>
-              </svg>
-              Delete
-            </button>
-          </div>
-        </dl>
+        <tickers-bar
+            :page="page"
+            :tickersList="tickersList"
+            :filter="filter"
+            @deleteTicker="deleteTicker"
+            @changeSelectedTicker="changeTickerCard"
+
+        />
         <hr
             v-if="selectedTicker"
             class="w-full border-t border-gray-600 my-4"/>
@@ -99,17 +66,18 @@
 </template>
 
 <script>
-import {subscribeToTicker, tickersHelper, unsubscribeFromTicker} from "@/api";
+import {subscribeToTicker, unsubscribeFromTicker} from "@/api";
 import AddTickerBar from "@/components/AddTickerBar.vue";
 import LoadingSpinner from "@/components/LoadingSpinner.vue";
 import TickerPriceGraph from "@/components/TickerPriceGraph.vue";
-
+import TickersBar from "@/components/TickersBar.vue";
 export default {
   name: 'App',
   components: {
     LoadingSpinner,
     AddTickerBar,
-    TickerPriceGraph
+    TickerPriceGraph,
+    TickersBar
   },
   data() {
     return {
@@ -119,8 +87,6 @@ export default {
       graph: null,
       APIKEY: '405b2526fce0af5d31588ded326b9c2d74465d7b6464f88fcccc8bcd05d5b8fd',
       pageIsLoading: true,
-
-      tickerIsExist : false,
       page: 1,
       filter: '',
       maxGraphElements: null,
@@ -145,37 +111,20 @@ export default {
         this.updatePrice(ticker.name, newPrice);
       }))
     }
-
-
-
     this.pageIsLoading = false;
-
-
   },
 
   computed: {
-    isExist() {
-      return !!this.tickersList.find(ticker => ticker.name === this.ticker.toUpperCase());
-    },
-
-    startTickersIndexOnPage() {
-      return 6 * (this.page - 1);
+    filteredTickers() {
+      return this.tickersList.filter(ticker => ticker.name.includes(this.filter.toUpperCase()));
     },
 
     endTickersIndexOnPage() {
       return 6 * this.page;
     },
 
-    filteredTickers() {
-      return this.tickersList.filter(ticker => ticker.name.includes(this.filter.toUpperCase()));
-    },
-
     isTheNextPage() {
-      return this.endTickersIndexOnPage < this.filteredTickers.length;
-    },
-
-    tickersOnPage() {
-      return this.filteredTickers.slice(this.startTickersIndexOnPage, this.endTickersIndexOnPage);
+      return  this.endTickersIndexOnPage < this.filteredTickers.length;
     },
 
     pageStateOptions() {
@@ -193,10 +142,6 @@ export default {
     },
 
     add(ticker) {
-      if (this.isExist) {
-        this.tickerIsExist = true;
-        return;
-      }
       const currentTicker = {
         name: ticker.toUpperCase(),
         price: "---"
@@ -219,13 +164,7 @@ export default {
       }
     },
 
-    formatPrice(price) {
-      if (price === "---") {
-        return price;
-      }
-      price = +price;
-      return price > 1 ? price.toFixed(2) : +price.toPrecision(5)
-    },
+
     deleteTicker(tickerToRemove) {
       this.tickersList = this.tickersList.filter(ticker => ticker !== tickerToRemove);
       if (tickerToRemove.name === this.selectedTicker?.name) {
@@ -265,7 +204,6 @@ export default {
     },
 
     ticker() {
-      this.tickerIsExist = false;
       this.filter = "";
     },
 
