@@ -1,23 +1,13 @@
 const API_KEY = '405b2526fce0af5d31588ded326b9c2d74465d7b6464f88fcccc8bcd05d5b8fd'
 const AGGREGATE_INDEX = "5";
 const tickersHandlers = new Map;
-// let convertValueBTC = null;
+
 const socket = new WebSocket(`wss://streamer.cryptocompare.com/v2?api_key=${API_KEY}`)
 socket.addEventListener("message", event =>{
     const messageData = JSON.parse(event.data)
     if(messageData.TYPE === AGGREGATE_INDEX && messageData.PRICE){
         const handlers = tickersHandlers.get((messageData.FROMSYMBOL) ?? []);
         handlers.forEach((fn) => fn(messageData.PRICE))
-        if(messageData.FROMSYMBOL === 'BTC'){
-            // convertValueBTC = messageData.PRICE;
-        }
-    // }setTimeout(() => {
-    //     if(messageData.TYPE === "500" && messageData.MESSAGE === "INVALID_SUB"){
-    //         console.log([messageData.PARAMETER.slice(0, -3) + 'BTC'])
-    //         subscribeToTickerOnWs("", '', [messageData.PARAMETER.slice(0, -3) + 'BTC'])
-    //     }
-    // },10000)
-
 }})
 
 function subscribeToTickerOnWs(ticker){
@@ -39,7 +29,7 @@ function subscribeToTickerOnWs(ticker){
 function unsubscribeFromTickerOnWs(ticker){
     const message = JSON.stringify({
         action: "SubRemove",
-        subs: [`5~CCCAGG~${ticker}~BTC`]
+        subs: [`5~CCCAGG~${ticker}~USD`]
     });
     if(socket.readyState === WebSocket.OPEN){
         socket.send(message);

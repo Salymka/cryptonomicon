@@ -207,9 +207,7 @@ export default {
       this.filter = "";
     },
 
-    filter() {
-      this.page = 1;
-    },
+
 
     pageStateOptions(newValue) {
       history.pushState(

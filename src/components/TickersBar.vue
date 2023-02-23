@@ -1,4 +1,29 @@
 <template>
+  <div class="flex">
+    <div class="max-w-xs">
+      <label for="wallet" class="block text-sm font-medium text-gray-700">
+        FILTER
+      </label>
+      <input
+          v-model="filter"
+          type="text"
+          name="wallet"
+          id="wallet"
+          class="block w-full pr-10 border-gray-300 text-gray-900 focus:outline-none focus:ring-gray-500 focus:border-gray-500 sm:text-sm rounded-md"
+          placeholder="For example DOGE"
+      />
+      <last-page-button
+          v-if="page > 1"
+          @lastPage="page = page - 1"
+      />
+      <next-page-button
+          v-if="isNextPage"
+          @nextPage="page = page + 1"
+      />
+
+    </div>
+  </div>
+  <hr class="w-full border-t border-gray-600 my-4"/>
   <dl class="mt-5 grid grid-cols-1 gap-5 sm:grid-cols-3">
     <div
         v-for="tickerCard in tickers"
@@ -24,31 +49,37 @@
       />
     </div>
   </dl>
+  <hr
+      v-if="selectedTicker"
+      class="w-full border-t border-gray-600 my-4"/>
+
 </template>
 <script>
 import DeleteTickerButton from "@/components/DeleteTickerButton.vue";
+import NextPageButton from "@/components/NextPageButton.vue";
+import LastPageButton from "@/components/LastPageButton.vue";
+
 export default {
-  components:{
+  components: {
+    LastPageButton,
+    NextPageButton,
     DeleteTickerButton
   },
 
-  data(){
-    return{
+  data() {
+    return {
       tickers: [],
       selectedTicker: null,
-      isNextPage: false
+      isNextPage: false,
+      filter: "",
+      page: 1
     }
   },
-  props:{
+  props: {
     tickersList: {
       type: Array
     },
-    page: {
-      type: Number
-    },
-    filter: {
-      type: String
-    }
+
   },
   created() {
     this.tickers = this.tickersOnPage()
@@ -73,7 +104,7 @@ export default {
       this.isNextPage = this.endTickersIndexOnPage() < this.filteredTickers().length;
       this.$emit("isNextPage", this.isNextPage)
     },
-    deleteTicker(ticker){
+    deleteTicker(ticker) {
       this.$emit("deleteTicker", ticker);
     },
     formatPrice(price) {
@@ -91,12 +122,16 @@ export default {
   },
 
   watch: {
-    page(){
+    page() {
       this.isTheNextPage();
     },
-    tickersList(){
+    tickersList() {
       this.tickers = this.tickersOnPage()
-    }
+    },
+
+    filter() {
+      this.page = 1;
+    },
   }
 }
 </script>

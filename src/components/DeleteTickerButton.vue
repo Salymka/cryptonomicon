@@ -18,4 +18,4 @@
     Delete
   </button>
 </template>
-<script>
+
