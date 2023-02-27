@@ -26,7 +26,7 @@
   <hr class="w-full border-t border-gray-600 my-4"/>
   <dl class="mt-5 grid grid-cols-1 gap-5 sm:grid-cols-3">
     <div
-        v-for="tickerCard in tickers"
+        v-for="tickerCard in tickersOnPage()"
         v-bind:key="tickerCard"
         @click="changeSelectedTicker(tickerCard)"
         :class="{
@@ -49,10 +49,6 @@
       />
     </div>
   </dl>
-  <hr
-      v-if="selectedTicker"
-      class="w-full border-t border-gray-600 my-4"/>
-
 </template>
 <script>
 import DeleteTickerButton from "@/components/DeleteTickerButton.vue";
@@ -77,20 +73,28 @@ export default {
   },
   props: {
     tickersList: {
-      type: Array
+      type: Array,
+      required: true,
+      default: () => []
     },
 
   },
   created() {
-    this.tickers = this.tickersOnPage()
-  },
+    const windowData = Object.fromEntries(new URL(window.location).searchParams.entries())
+    if (windowData.filter) {
+      this.filter = windowData.filter
+    }
+    if (windowData.page) {
+      this.page = +windowData.page
+    }
 
-  methods: {
-    tickersOnPage() {
-      return this.filteredTickers().slice(this.startTickersIndexOnPage(), this.endTickersIndexOnPage());
-    },
-    filteredTickers() {
-      return this.tickersList.filter(ticker => ticker.name.includes(this.filter.toUpperCase()));
+  },
+  computed: {
+    pageStateOptions() {
+      return {
+        page: this.page,
+        filter: this.filter
+      }
     },
 
     startTickersIndexOnPage() {
@@ -100,9 +104,21 @@ export default {
     endTickersIndexOnPage() {
       return 6 * this.page;
     },
+
+
+  },
+
+  methods: {
+
+    filteredTickers() {
+      return this.tickersList.filter(ticker => ticker.name.includes(this.filter.toUpperCase()));
+    },
+    tickersOnPage() {
+      return this.filteredTickers().slice(this.startTickersIndexOnPage, this.endTickersIndexOnPage);
+    },
+
     isTheNextPage() {
-      this.isNextPage = this.endTickersIndexOnPage() < this.filteredTickers().length;
-      this.$emit("isNextPage", this.isNextPage)
+      this.isNextPage = this.endTickersIndexOnPage < this.filteredTickers().length;
     },
     deleteTicker(ticker) {
       this.$emit("deleteTicker", ticker);
@@ -120,6 +136,10 @@ export default {
     }
 
   },
+  emits: {
+    changeSelectedTicker: null,
+    deleteTicker: null
+  },
 
   watch: {
     page() {
@@ -131,6 +151,13 @@ export default {
 
     filter() {
       this.page = 1;
+    },
+
+    pageStateOptions(newValue) {
+      history.pushState(
+          null,
+          document.title,
+          `${window.location.pathname}?page=${newValue.page}&filter=${newValue.filter}`)
     },
   }
 }
