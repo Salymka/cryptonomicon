@@ -13,6 +13,9 @@ export default {
     lastPage() {
       this.$emit("lastPage")
     }
+  },
+  emits:{
+    lastPage: null
   }
 }
 </script>

@@ -17,7 +17,7 @@
           @lastPage="page = page - 1"
       />
       <next-page-button
-          v-if="isNextPage"
+          v-if="isTheNextPage"
           @nextPage="page = page + 1"
       />
 
@@ -26,7 +26,7 @@
   <hr class="w-full border-t border-gray-600 my-4"/>
   <dl class="mt-5 grid grid-cols-1 gap-5 sm:grid-cols-3">
     <div
-        v-for="tickerCard in tickersOnPage()"
+        v-for="tickerCard in tickersOnPage"
         v-bind:key="tickerCard"
         @click="changeSelectedTicker(tickerCard)"
         :class="{
@@ -64,8 +64,6 @@ export default {
 
   data() {
     return {
-      tickers: [],
-      selectedTicker: null,
       isNextPage: false,
       filter: "",
       page: 1
@@ -75,8 +73,11 @@ export default {
     tickersList: {
       type: Array,
       required: true,
-      default: () => []
     },
+    selectedTicker: {
+      required: true
+    }
+
 
   },
   created() {
@@ -96,30 +97,25 @@ export default {
         filter: this.filter
       }
     },
-
     startTickersIndexOnPage() {
       return 6 * (this.page - 1);
     },
-
     endTickersIndexOnPage() {
       return 6 * this.page;
     },
-
+    tickersOnPage() {
+      return this.filteredTickers.slice(this.startTickersIndexOnPage, this.endTickersIndexOnPage);
+    },
+    isTheNextPage() {
+      return  this.endTickersIndexOnPage < this.filteredTickers.length;
+    },
+    filteredTickers() {
+      return this.tickersList.filter(ticker => ticker.name.includes(this.filter.toUpperCase()));
+    },
 
   },
 
   methods: {
-
-    filteredTickers() {
-      return this.tickersList.filter(ticker => ticker.name.includes(this.filter.toUpperCase()));
-    },
-    tickersOnPage() {
-      return this.filteredTickers().slice(this.startTickersIndexOnPage, this.endTickersIndexOnPage);
-    },
-
-    isTheNextPage() {
-      this.isNextPage = this.endTickersIndexOnPage < this.filteredTickers().length;
-    },
     deleteTicker(ticker) {
       this.$emit("deleteTicker", ticker);
     },
@@ -131,22 +127,18 @@ export default {
       return price > 1 ? price.toFixed(2) : +price.toPrecision(5);
     },
     changeSelectedTicker(ticker) {
-      this.selectedTicker = ticker;
-      this.$emit("changeSelectedTicker", ticker);
+      this.$emit("update:selectedTicker", ticker);
     }
 
   },
   emits: {
-    changeSelectedTicker: null,
+    "update:selectedTicker" : null,
     deleteTicker: null
   },
 
   watch: {
     page() {
       this.isTheNextPage();
-    },
-    tickersList() {
-      this.tickers = this.tickersOnPage()
     },
 
     filter() {

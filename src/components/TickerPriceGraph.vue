@@ -46,42 +46,29 @@
   </section>
 </template>
 <script>
-
-
-//import {nextTick} from "vue";
-
+import {nextTick} from "vue";
 
 export default {
-  data() {
-    return {
-      maxElements: null
-    }
-  },
-  created() {
-    console.log(this.selectedTicker)
-  },
   mounted() {
-
     window.addEventListener('resize', this.calculateMaxGraphElements)
   },
-
   beforeUnmount() {
     window.removeEventListener('resize', this.calculateMaxGraphElements)
   },
-
-
   props: {
     selectedTicker: {
       type: Object,
+      required: true,
+      default: () => {}
     },
-    graph: Array,
+    graph: {
+      type: Array,
+      required: true,
+      default: () => []
+    },
   },
-
   computed: {
     normalizeGraph() {
-      if (!this.maxElements) {
-        this.calculateMaxGraphElements()
-      }
       const maxValue = Math.max(...this.graph);
       const minValue = Math.min(...this.graph);
       if (maxValue === minValue) {
@@ -92,23 +79,27 @@ export default {
   },
   methods: {
     closeGraph() {
-      this.$emit("closeGraph")
+      this.$emit("update:selectedTicker", null)
     },
-
     calculateMaxGraphElements() {
       if (!this.$refs.graph) {
         return;
       }
       this.$emit("maxElements", this.$refs.graph.clientWidth / 22)
-
     },
-
-
   },
   watch: {
-    selectedTicker() {
-      this.calculateMaxGraphElements()
+    selectedTicker: {
+      handler() {
+        nextTick().then(() => this.calculateMaxGraphElements())
+      },
+      immediate: true
     }
+  },
+  emits: {
+    maxElements: null,
+    closeGraph: null,
+    'update:selectedTicker' : null
   }
 }
 </script>

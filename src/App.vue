@@ -7,9 +7,9 @@
           :tickersList="tickersList"
       />
       <tickers-bar
+          v-model:selectedTicker="selectedTicker"
           :tickersList="tickersList"
           @deleteTicker="deleteTicker"
-          @changeSelectedTicker="changeTickerCard"
 
       />
       <hr
@@ -20,7 +20,7 @@
           v-if="selectedTicker"
           class="relative"
           @closeGraph="closeGraph"
-          :selectedTicker="selectedTicker"
+          v-model:selectedTicker="selectedTicker"
           :graph="graph"
           @maxElements="calculateMaxGraphElements"
       />
@@ -93,7 +93,6 @@ export default {
         if (this.graph.length > this.maxGraphElements) {
           this.graph = this.graph.slice(-this.maxGraphElements)
         }
-        console.log(this.graph.length, this.maxGraphElements)
       }
     },
 
@@ -122,7 +121,6 @@ export default {
   watch: {
     selectedTicker() {
       this.graph = [];
-
     },
 
     tickersList() {

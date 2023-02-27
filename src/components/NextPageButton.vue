@@ -13,6 +13,9 @@ export default {
     nextPage() {
       this.$emit("nextPage")
     }
+  },
+  emits: {
+    nextPage: null
   }
 }
 </script>
